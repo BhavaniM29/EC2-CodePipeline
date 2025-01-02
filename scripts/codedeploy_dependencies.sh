@@ -3,8 +3,16 @@
 LOG_FILE="/var/log/codedeploy_dependencies.log"
 APP_DIR="/var/www/myapp"
 DEPLOY_ROOT="/opt/codedeploy-agent/deployment-root"
+PORT=8080
 
 echo "Starting dependency installation..." >> "$LOG_FILE"
+
+# Check if the port is in use and stop the process
+PID=$(sudo lsof -t -i:$PORT)
+if [ -n "$PID" ]; then
+    echo "Port $PORT is in use by PID $PID. Stopping the process..." >> "$LOG_FILE"
+    sudo kill -9 $PID
+fi
 
 # Locate deployment-archive
 DEPLOY_DIR=$(find "$DEPLOY_ROOT" -type d -name "deployment-archive" | head -n 1)
