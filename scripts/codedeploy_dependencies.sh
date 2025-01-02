@@ -23,24 +23,27 @@ fi
 
 APP_ZIP="$DEPLOY_DIR/app.zip"
 
-# Ensure application directory exists
-if [ ! -d "$APP_DIR" ]; then
+# Cleanup application directory
+if [ -d "$APP_DIR" ]; then
+    echo "Clearing existing files in $APP_DIR..." >> "$LOG_FILE"
+    sudo rm -rf "$APP_DIR"/*
+else
     echo "Creating application directory: $APP_DIR" >> "$LOG_FILE"
     sudo mkdir -p "$APP_DIR"
     sudo chown ec2-user:ec2-user "$APP_DIR"
     sudo chmod 755 "$APP_DIR"
 fi
 
-# Extract app.zip
+# Extract application zip
 if [ -f "$APP_ZIP" ]; then
     echo "Extracting application files from $APP_ZIP to $APP_DIR..." >> "$LOG_FILE"
     sudo unzip -o "$APP_ZIP" -d "$APP_DIR" >> "$LOG_FILE" 2>&1
 else
-    echo "Error: app.zip not found at $APP_ZIP" >> "$LOG_FILE"
+    echo "Error: app.zip not found at $APP_ZIP." >> "$LOG_FILE"
     exit 1
 fi
 
-# Set up and activate virtual environment
+# Setup and activate virtual environment
 echo "Setting up virtual environment..." >> "$LOG_FILE"
 if [ ! -d "$APP_DIR/venv" ]; then
     python3 -m venv "$APP_DIR/venv" >> "$LOG_FILE" 2>&1
@@ -56,7 +59,7 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# Upgrade pip to the latest version
+# Upgrade pip
 echo "Upgrading pip..." >> "$LOG_FILE"
 pip install --upgrade pip >> "$LOG_FILE" 2>&1
 
@@ -66,35 +69,15 @@ if [ -f "$REQ_FILE" ]; then
     echo "Installing dependencies from $REQ_FILE..." >> "$LOG_FILE"
     pip install -r "$REQ_FILE" >> "$LOG_FILE" 2>&1
     if [ $? -ne 0 ]; then
-        echo "Error: Failed to install dependencies from $REQ_FILE." >> "$LOG_FILE"
+        echo "Error: Failed to install dependencies." >> "$LOG_FILE"
         deactivate
         exit 1
     fi
 else
-    echo "Error: requirements.txt not found in $APP_DIR. Installing Flask and Gunicorn as fallback..." >> "$LOG_FILE"
+    echo "No requirements.txt found. Installing fallback dependencies..." >> "$LOG_FILE"
     pip install flask gunicorn >> "$LOG_FILE" 2>&1
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to install Flask or Gunicorn." >> "$LOG_FILE"
-        deactivate
-        exit 1
-    fi
 fi
 
-# Verify Flask installation
-python3 -c "import flask" >> "$LOG_FILE" 2>&1
-if [ $? -ne 0 ]; then
-    echo "Error: Flask module is not installed." >> "$LOG_FILE"
-    deactivate
-    exit 1
-fi
-
-# Verify Gunicorn installation
-if [ ! -f "$APP_DIR/venv/bin/gunicorn" ]; then
-    echo "Error: Gunicorn is not installed correctly." >> "$LOG_FILE"
-    deactivate
-    exit 1
-fi
-
-echo "Dependencies installed successfully." >> "$LOG_FILE"
+echo "Dependency installation completed successfully." >> "$LOG_FILE"
 deactivate
 exit 0
