@@ -5,12 +5,10 @@ files:
     destination: /var/www/myapp
 hooks:
   BeforeInstall:
-    - location: scripts/codedeploy_handler.sh
+    - location: scripts/codedeploy_dependencies.sh
       timeout: 300
       runas: root
-      arguments: ["BeforeInstall"]
   AfterInstall:
-    - location: scripts/codedeploy_handler.sh
+    - location: scripts/deploy.sh
       timeout: 300
       runas: root
-      arguments: ["AfterInstall"]
