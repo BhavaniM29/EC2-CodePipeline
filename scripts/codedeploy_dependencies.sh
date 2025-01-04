@@ -11,8 +11,8 @@ if [ ! -d "$APP_DIR" ]; then
     echo "Creating application directory: $APP_DIR" >> "$LOG_FILE"
     sudo mkdir -p "$APP_DIR"
 fi
-sudo chown -R ec2-user:ec2-user "$APP_DIR"
-sudo chmod -R 755 "$APP_DIR"
+sudo chown -R ec2-user:ec2-user /var/www/myapp
+sudo chmod -R 755 /var/www/myapp
 
 # Verify the existence of app.zip
 if [ ! -f "$APP_ZIP" ]; then
