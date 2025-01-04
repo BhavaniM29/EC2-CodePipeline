@@ -36,36 +36,37 @@ if [ "$LIFECYCLE_EVENT" == "BeforeInstall" ]; then
         exit 1
     fi
 
-    # Set up and activate virtual environment
+    # Set up virtual environment
     echo "Setting up virtual environment..." >> "$LOG_FILE"
     if [ ! -d "$APP_DIR/venv" ]; then
         python3 -m venv "$APP_DIR/venv" >> "$LOG_FILE" || { echo "Error: Virtual environment creation failed"; exit 1; }
     fi
 
+elif [ "$LIFECYCLE_EVENT" == "AfterInstall" ]; then
+    # Activate virtual environment and install dependencies
+    echo "Activating virtual environment and installing dependencies..." >> "$LOG_FILE"
     source "$APP_DIR/venv/bin/activate" || { echo "Error: Failed to activate virtual environment"; exit 1; }
 
-    # Upgrade pip and install dependencies
-    echo "Upgrading pip and installing dependencies..." >> "$LOG_FILE"
+    echo "Upgrading pip..." >> "$LOG_FILE"
     pip install --upgrade pip >> "$LOG_FILE"
+
     REQ_FILE="$APP_DIR/requirements.txt"
     if [ -f "$REQ_FILE" ]; then
-        pip install -r "$REQ_FILE" >> "$LOG_FILE" || { echo "Error: Failed to install dependencies"; exit 1; }
+        echo "Installing dependencies from $REQ_FILE..." >> "$LOG_FILE"
+        pip install -r "$REQ_FILE" >> "$LOG_FILE" || { echo "Error: Failed to install dependencies"; deactivate; exit 1; }
     else
         echo "No requirements.txt found. Installing Flask and Gunicorn as fallback..." >> "$LOG_FILE"
-        pip install flask gunicorn >> "$LOG_FILE" || { echo "Error: Failed to install Flask or Gunicorn"; exit 1; }
+        pip install flask gunicorn >> "$LOG_FILE" || { echo "Error: Failed to install Flask or Gunicorn"; deactivate; exit 1; }
     fi
 
     deactivate
-    echo "BeforeInstall completed successfully." >> "$LOG_FILE"
 
-elif [ "$LIFECYCLE_EVENT" == "AfterInstall" ]; then
+    # Restart application
     echo "Restarting application..." >> "$LOG_FILE"
     APP_PID=$(lsof -ti :8080)
     [ -n "$APP_PID" ] && sudo kill -9 "$APP_PID"
 
-    source "$APP_DIR/venv/bin/activate" || { echo "Error: Failed to activate virtual environment"; exit 1; }
     nohup python3 "$APP_DIR/app.py" >> "$LOG_FILE" 2>&1 &
-    deactivate
 
     echo "Application started successfully on port 8080." >> "$LOG_FILE"
 fi
