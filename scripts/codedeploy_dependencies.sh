@@ -1,15 +1,12 @@
 #!/bin/bash
-set -e  # Exit immediately if a command fails
-set -x  # Print commands and their arguments as they are executed
 
 LOG_FILE="/var/log/codedeploy_dependencies.log"
 APP_DIR="/var/www/myapp"
-DEPLOY_ROOT="/opt/codedeploy-agent/deployment-root"
-PORT=8080
+APP_ZIP="$APP_DIR/app.zip"
 
 echo "Starting dependency installation..." >> "$LOG_FILE"
 
-# Ensure the application directory exists
+# Ensure application directory exists
 if [ ! -d "$APP_DIR" ]; then
     echo "Creating application directory: $APP_DIR" >> "$LOG_FILE"
     sudo mkdir -p "$APP_DIR"
@@ -17,8 +14,7 @@ fi
 sudo chown -R ec2-user:ec2-user "$APP_DIR"
 sudo chmod -R 755 "$APP_DIR"
 
-# Locate deployment archive
-APP_ZIP="$DEPLOY_ROOT/deployment-archive/app.zip"
+# Verify the existence of app.zip
 if [ ! -f "$APP_ZIP" ]; then
     echo "Error: app.zip not found at $APP_ZIP" >> "$LOG_FILE"
     exit 1
@@ -44,6 +40,6 @@ else
     exit 1
 fi
 
-echo "Dependency installation completed successfully." >> "$LOG_FILE"
 deactivate
+echo "Dependency installation completed successfully." >> "$LOG_FILE"
 exit 0
