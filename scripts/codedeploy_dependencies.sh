@@ -6,7 +6,7 @@ LOG_FILE="/var/log/codedeploy_dependencies.log"
 APP_DIR="/var/www/myapp"
 DEPLOY_ROOT="/opt/codedeploy-agent/deployment-root"
 
-echo "Starting automated deployment and application setup..." >> "$LOG_FILE"
+echo "Starting dependency installation..." >> "$LOG_FILE"
 
 # Locate deployment archive dynamically
 DEPLOY_DIR=$(find "$DEPLOY_ROOT" -type d -name "deployment-archive" | head -n 1)
@@ -66,15 +66,6 @@ if [ ! -f "$APP_DIR/venv/bin/gunicorn" ]; then
     exit 1
 fi
 
-# Run the application
-echo "Starting application on port 8080..." >> "$LOG_FILE"
-APP_PID=$(sudo lsof -ti :8080)
-if [ -n "$APP_PID" ]; then
-    echo "Stopping existing application on port 8080 (PID: $APP_PID)..." >> "$LOG_FILE"
-    sudo kill -9 "$APP_PID"
-fi
-nohup python3 "$APP_DIR/app.py" >> "$LOG_FILE" 2>&1 &
-
 deactivate
-echo "Application setup and deployment completed successfully!" >> "$LOG_FILE"
+echo "Dependency installation completed successfully." >> "$LOG_FILE"
 exit 0
