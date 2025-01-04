@@ -5,12 +5,12 @@ APP_DIR="/var/www/myapp"
 
 echo "Starting deployment process..." >> "$LOG_FILE"
 
-# Set permissions for the application directory
+# Ensure proper permissions
 sudo chown -R ec2-user:ec2-user "$APP_DIR"
 sudo chmod -R 755 "$APP_DIR"
 
-# Restart the application process
-echo "Restarting application process..." >> "$LOG_FILE"
+# Restart application
+echo "Restarting application..." >> "$LOG_FILE"
 APP_PID=$(lsof -ti :8080)
 if [ -n "$APP_PID" ]; then
     sudo kill -9 "$APP_PID"
