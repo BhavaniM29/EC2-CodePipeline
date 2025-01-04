@@ -2,42 +2,20 @@
 
 LOG_FILE="/var/log/codedeploy_dependencies.log"
 APP_DIR="/var/www/myapp"
-DEPLOY_ROOT="/opt/codedeploy-agent/deployment-root"
 
 echo "Starting deployment process..." >> "$LOG_FILE"
 
-# Locate deployment-archive
-DEPLOY_DIR=$(find "$DEPLOY_ROOT" -type d -name "deployment-archive" | head -n 1)
-if [ -z "$DEPLOY_DIR" ]; then
-    echo "Error: Deployment directory (deployment-archive) not found under $DEPLOY_ROOT." >> "$LOG_FILE"
-    exit 1
+# Set permissions for the application directory
+sudo chown -R ec2-user:ec2-user "$APP_DIR"
+sudo chmod -R 755 "$APP_DIR"
+
+# Restart the application process
+echo "Restarting application process..." >> "$LOG_FILE"
+APP_PID=$(lsof -ti :8080)
+if [ -n "$APP_PID" ]; then
+    sudo kill -9 "$APP_PID"
 fi
+nohup python3 "$APP_DIR/app.py" >> "$LOG_FILE" 2>&1 &
 
-APP_ZIP="$DEPLOY_DIR/app.zip"
-
-# Cleanup target application directory
-if [ -d "$APP_DIR" ]; then
-    echo "Clearing old files in $APP_DIR..." >> "$LOG_FILE"
-    sudo rm -rf "$APP_DIR"/* >> "$LOG_FILE" 2>&1
-else
-    echo "Creating application directory: $APP_DIR" >> "$LOG_FILE"
-    sudo mkdir -p "$APP_DIR"
-    sudo chown ec2-user:ec2-user "$APP_DIR"
-    sudo chmod 755 "$APP_DIR"
-fi
-
-# Extract application zip
-if [ -f "$APP_ZIP" ]; then
-    echo "Extracting application files from $APP_ZIP to $APP_DIR..." >> "$LOG_FILE"
-    sudo unzip -o "$APP_ZIP" -d "$APP_DIR" >> "$LOG_FILE" 2>&1
-    if [ $? -ne 0 ]; then
-        echo "Error: Failed to extract $APP_ZIP to $APP_DIR." >> "$LOG_FILE"
-        exit 1
-    fi
-else
-    echo "Error: app.zip not found at $APP_ZIP." >> "$LOG_FILE"
-    exit 1
-fi
-
-echo "Application deployed successfully to $APP_DIR." >> "$LOG_FILE"
+echo "Deployment completed successfully." >> "$LOG_FILE"
 exit 0
