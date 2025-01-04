@@ -2,7 +2,7 @@ version: 0.0
 os: linux
 files:
   - source: /app.zip
-    destination: /opt/codedeploy-agent/deployment-root/deployment-archive/app.zip
+    destination: /var/www/myapp/app.zip
 hooks:
   BeforeInstall:
     - location: scripts/codedeploy_dependencies.sh
