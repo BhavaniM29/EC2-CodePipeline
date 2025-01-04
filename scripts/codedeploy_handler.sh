@@ -41,7 +41,8 @@ if [ "$LIFECYCLE_EVENT" == "BeforeInstall" ]; then
     if [ ! -d "$APP_DIR/venv" ]; then
         python3 -m venv "$APP_DIR/venv" >> "$LOG_FILE" || { echo "Error: Virtual environment creation failed"; exit 1; }
     fi
-    source "$APP_DIR/venv/bin/activate"
+
+    source "$APP_DIR/venv/bin/activate" || { echo "Error: Failed to activate virtual environment"; exit 1; }
 
     # Upgrade pip and install dependencies
     echo "Upgrading pip and installing dependencies..." >> "$LOG_FILE"
@@ -62,7 +63,7 @@ elif [ "$LIFECYCLE_EVENT" == "AfterInstall" ]; then
     APP_PID=$(lsof -ti :8080)
     [ -n "$APP_PID" ] && sudo kill -9 "$APP_PID"
 
-    source "$APP_DIR/venv/bin/activate"
+    source "$APP_DIR/venv/bin/activate" || { echo "Error: Failed to activate virtual environment"; exit 1; }
     nohup python3 "$APP_DIR/app.py" >> "$LOG_FILE" 2>&1 &
     deactivate
 
