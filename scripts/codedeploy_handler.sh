@@ -10,7 +10,7 @@ LIFECYCLE_EVENT=$1
 echo "Deployment started for event: $LIFECYCLE_EVENT" >> "$LOG_FILE"
 
 if [ "$LIFECYCLE_EVENT" == "BeforeInstall" ]; then
-    # Locate the latest deployment-archive path based on modification time
+    # Locate the latest deployment-archive path
     DEPLOY_DIR=$(find "$DEPLOY_ROOT" -type d -name "deployment-archive" -exec stat --format '%Y %n' {} + | sort -nr | head -n 1 | awk '{print $2}')
     if [ -z "$DEPLOY_DIR" ]; then
         echo "Error: Deployment directory not found" >> "$LOG_FILE"
@@ -36,6 +36,25 @@ if [ "$LIFECYCLE_EVENT" == "BeforeInstall" ]; then
         exit 1
     fi
 
+    # Set up and activate virtual environment
+    echo "Setting up virtual environment..." >> "$LOG_FILE"
+    if [ ! -d "$APP_DIR/venv" ]; then
+        python3 -m venv "$APP_DIR/venv" >> "$LOG_FILE" || { echo "Error: Virtual environment creation failed"; exit 1; }
+    fi
+    source "$APP_DIR/venv/bin/activate"
+
+    # Upgrade pip and install dependencies
+    echo "Upgrading pip and installing dependencies..." >> "$LOG_FILE"
+    pip install --upgrade pip >> "$LOG_FILE"
+    REQ_FILE="$APP_DIR/requirements.txt"
+    if [ -f "$REQ_FILE" ]; then
+        pip install -r "$REQ_FILE" >> "$LOG_FILE" || { echo "Error: Failed to install dependencies"; exit 1; }
+    else
+        echo "No requirements.txt found. Installing Flask and Gunicorn as fallback..." >> "$LOG_FILE"
+        pip install flask gunicorn >> "$LOG_FILE" || { echo "Error: Failed to install Flask or Gunicorn"; exit 1; }
+    fi
+
+    deactivate
     echo "BeforeInstall completed successfully." >> "$LOG_FILE"
 
 elif [ "$LIFECYCLE_EVENT" == "AfterInstall" ]; then
