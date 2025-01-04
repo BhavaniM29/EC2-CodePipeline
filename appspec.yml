@@ -8,8 +8,9 @@ hooks:
     - location: scripts/codedeploy_handler.sh
       timeout: 300
       runas: root
+      arguments: ["BeforeInstall"]
   AfterInstall:
     - location: scripts/codedeploy_handler.sh
       timeout: 300
       runas: root
-      arguments: "AfterInstall"
+      arguments: ["AfterInstall"]
