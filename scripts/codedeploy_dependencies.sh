@@ -1,10 +1,23 @@
 #!/bin/bash
+set -e  # Exit immediately if a command fails
+set -x  # Print commands and their arguments as they are executed
 
 LOG_FILE="/var/log/codedeploy_dependencies.log"
 APP_DIR="/var/www/myapp"
-APP_ZIP="$APP_DIR/app.zip"
+DEPLOY_ROOT="/opt/codedeploy-agent/deployment-root"
 
-echo "Starting dependency installation..." >> "$LOG_FILE"
+echo "Starting automated deployment and application setup..." >> "$LOG_FILE"
+
+# Locate deployment archive dynamically
+DEPLOY_DIR=$(find "$DEPLOY_ROOT" -type d -name "deployment-archive" | head -n 1)
+if [ -z "$DEPLOY_DIR" ]; then
+    echo "Error: Deployment directory (deployment-archive) not found under $DEPLOY_ROOT." >> "$LOG_FILE"
+    exit 1
+fi
+
+APP_ZIP="$DEPLOY_DIR/app.zip"
+echo "Resolved deployment directory: $DEPLOY_DIR" >> "$LOG_FILE"
+echo "Resolved APP_ZIP path: $APP_ZIP" >> "$LOG_FILE"
 
 # Ensure application directory exists
 if [ ! -d "$APP_DIR" ]; then
@@ -46,6 +59,22 @@ else
     exit 1
 fi
 
+# Verify Flask and Gunicorn installations
+python3 -c "import flask" >> "$LOG_FILE" 2>&1 || { echo "Error: Flask module is not installed."; exit 1; }
+if [ ! -f "$APP_DIR/venv/bin/gunicorn" ]; then
+    echo "Error: Gunicorn is not installed correctly." >> "$LOG_FILE"
+    exit 1
+fi
+
+# Run the application
+echo "Starting application on port 8080..." >> "$LOG_FILE"
+APP_PID=$(sudo lsof -ti :8080)
+if [ -n "$APP_PID" ]; then
+    echo "Stopping existing application on port 8080 (PID: $APP_PID)..." >> "$LOG_FILE"
+    sudo kill -9 "$APP_PID"
+fi
+nohup python3 "$APP_DIR/app.py" >> "$LOG_FILE" 2>&1 &
+
 deactivate
-echo "Dependency installation completed successfully." >> "$LOG_FILE"
+echo "Application setup and deployment completed successfully!" >> "$LOG_FILE"
 exit 0
