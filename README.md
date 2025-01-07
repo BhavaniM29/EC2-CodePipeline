@@ -10,7 +10,9 @@ Successful deployment from CodePipeline side,
     1) cd /var/www/myapp
     2) source /var/www/myapp/venv/bin/activate
     3) pip install flask
-    4) python3 app.py
+    4) sudo lsof -i :8080        # on Subsequent step
+    5) sudo kill -9 PID          # # on Subsequent step
+    6) python3 app.py
 
 # b) if Subsequent deployment
     1) cd /opt/codedeploy-agent/deployment-root
